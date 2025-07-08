@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pruebas Automatizadas con Selenium</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <h1>El resultado es</h1>
+    <div th:if="${mensaje}" class="alert alert-info mt-3" th:text="${mensaje}"></div>
+    <div class="mt-4">
+        <form id="volverForm" method="post" action="/test" style="display:none;">
+            <!-- Si necesitas enviar algún parámetro, agrégalo aquí como input hidden -->
+            <input type="hidden" name="webUrl" th:value="${webUrl}">
+        </form>
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('volverForm').submit();">
+            Volver
+        </button>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
