@@ -22,6 +22,7 @@ jobs:
 
       - name: Compilar con Maven
         run: mvn -B clean package
+        working-directory: backend
 
       # (Opcional) - Ejecutar tests
       # - name: Ejecutar tests
