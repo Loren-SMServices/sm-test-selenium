@@ -70,7 +70,7 @@ public class ControladorInicial {
 	    for (String accion : acciones) {
 	        String accionTrim = accion.trim();
 	        if (!accionTrim.isEmpty()) {
-	            String resultado = seleniumService.interpretarYBuscar(webUrl, accionTrim)!=null ? seleniumService.interpretarYBuscar(webUrl, accionTrim):"";
+	            String resultado = seleniumService.interpretarYBuscar(webUrl, accionTrim);
 	            boolean exito = !resultado.toLowerCase().contains("error");
 	            resultados.add(new ResultadoAccion(accionTrim, exito, resultado));
 	        }
@@ -78,7 +78,7 @@ public class ControladorInicial {
 	    
 	    String mensaje = "";
 	    for (ResultadoAccion resultado : resultados) {
-	    	mensaje +=resultado.getAccion() + resultado.getMensaje();
+	    	mensaje +=resultado.getAccion() + " " + resultado.getMensaje() + "\n" ;
 		}
 
 	    // 3. Enviar la lista de resultados a la vista

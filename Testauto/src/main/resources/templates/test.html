@@ -184,6 +184,16 @@
 <script th:inline="javascript">
     var resultadosThymeleaf = /*[[${resultados != null} ? ${resultados} : '[]']]*/ [];
 </script>
+<script>
+    if (!Array.isArray(resultadosThymeleaf)) {
+        if (typeof resultadosThymeleaf === 'object' && resultadosThymeleaf !== null) {
+            resultadosThymeleaf = Object.values(resultadosThymeleaf);
+        } else {
+            resultadosThymeleaf = [];
+        }
+    }
+    // Ahora es seguro usar .filter() y .map()
+</script>
 
 <script>
 let elementosCache = [];
