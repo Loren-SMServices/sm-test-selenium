@@ -1,0 +1,29 @@
+name: CI Maven Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Compilar con Maven
+        run: mvn -B clean package
+        working-directory: Testauto
+
+      # (Opcional) - Ejecutar tests
+      # - name: Ejecutar tests
+      #   run: mvn test
