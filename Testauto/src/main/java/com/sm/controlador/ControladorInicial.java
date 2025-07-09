@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.sm.entidad.ResultadoAccion;
 import com.sm.servicios.SeleniumService;
 
 
@@ -54,14 +55,39 @@ public class ControladorInicial {
 	public String inciarPrueba(@RequestParam String webUrl,
 							   @RequestParam String prompt,
 							   Model model) {
+	  
+		
+		
 	  System.out.println("Entrando en iniciar-prueba");
 	  System.out.println("\nURL: " + webUrl + " ");
 	  System.out.println("prompt: " + prompt);
-      String resultado = seleniumService.interpretarYBuscar(webUrl, prompt);
-      model.addAttribute("mensaje", resultado);
-      model.addAttribute("webUrl", webUrl);
-      System.out.println("Saliendo de iniciar-prueba() resultado: " + resultado);
-      return "test";
+	  
+	// 1. Separar acciones por '|'
+	    String[] acciones = prompt.split("\\|");
+	    List<ResultadoAccion> resultados = new ArrayList<>();
+
+	    // 2. Ejecutar cada acción y guardar el resultado
+	    for (String accion : acciones) {
+	        String accionTrim = accion.trim();
+	        if (!accionTrim.isEmpty()) {
+	            String resultado = seleniumService.interpretarYBuscar(webUrl, accionTrim)!=null ? seleniumService.interpretarYBuscar(webUrl, accionTrim):"";
+	            boolean exito = !resultado.toLowerCase().contains("error");
+	            resultados.add(new ResultadoAccion(accionTrim, exito, resultado));
+	        }
+	    }
+	    
+	    String mensaje = "";
+	    for (ResultadoAccion resultado : resultados) {
+	    	mensaje +=resultado.getAccion() + resultado.getMensaje();
+		}
+
+	    // 3. Enviar la lista de resultados a la vista
+	    model.addAttribute("mensaje", mensaje);
+	    model.addAttribute("resultados", resultados);
+	    model.addAttribute("webUrl", webUrl);
+
+	    System.out.println("Saliendo de iniciar-prueba() resultados: " + resultados);
+	    return "test";
 	}
 	
 }
