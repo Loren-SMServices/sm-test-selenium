@@ -131,10 +131,10 @@
     <div id="colPrincipal" class="col-lg-7 mb-4 col-anim">
       <div class="app-card mx-auto logo-card" style="max-width: 700px;">
         <div class="text-center mb-3">
-            <img src="/img/sm-services-logo.png" alt="Logo de la empresa" style="height:90px; width:auto; max-width:220px; object-fit:contain; filter: drop-shadow(0 2px 8px #2226);" loading="lazy">
+            <img src="img/sm-services-logo.png" alt="Logo de la empresa" style="height:90px; width:auto; max-width:220px; object-fit:contain; filter: drop-shadow(0 2px 8px #2226);" loading="lazy">
         </div>
         <h1 class="app-title text-center mb-4">Pruebas Automatizadas con Selenium</h1>
-        <form th:action="@{/iniciar-prueba}" method="post" autocomplete="off">
+        <form th:action="@{iniciar-prueba}" method="post" autocomplete="off">
             <div class="mb-3">
                 <label for="webUrl" class="form-label">Dirección web a probar</label>
                 <input type="text" class="form-control" id="webUrl" name="webUrl"
@@ -356,7 +356,7 @@ function detectarElementosAjax(webUrl) {
     container.innerHTML = '';
     if (!webUrl) return;
     container.innerHTML = '<div class="col"><div class="alert alert-info shadow-sm">Buscando elementos interactuables...</div></div>';
-    fetch('/test/ajax', {
+    fetch('test/ajax', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'webUrl=' + encodeURIComponent(webUrl)
