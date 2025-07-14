@@ -24,6 +24,10 @@ public class SeleniumService {
         System.out.println("[SeleniumService] Constructor: WebDriver inyectado.");
         this.webDriver = webDriver;
     }
+    
+    public WebDriver getWebDriver() {
+		return this.webDriver;
+	}
 
     public void realizarPrueba() {
         System.out.println("[SeleniumService] Iniciando prueba simple en https://www.ejemplo.com");
@@ -60,14 +64,17 @@ public class SeleniumService {
             System.out.println("[SeleniumService] Error durante la prueba: " + e.getMessage());
             return "Error durante la prueba: " + e.getMessage();
         } finally {
-//            webDriver.quit();
+            // webDriver.quit();
         }
     }
 	
-	public String interpretarYBuscar(String webUrl, String prompt) {
+	public String interpretarYBuscar(String webUrl, String prompt, String[] acciones) {
 	    System.out.println("[SeleniumService] interpretarYBuscar() - URL: " + webUrl + " | Prompt: " + prompt);
 	    try {
-	        webDriver.get(webUrl);
+	    	int tamañoAcciones = acciones.length;
+	    	if (tamañoAcciones == 1) {
+	    		webDriver.get(webUrl);
+	    	}
 	        System.out.println("[SeleniumService] Página cargada.");
 
 	        String accion = "";
@@ -78,7 +85,6 @@ public class SeleniumService {
 	            objetivo = extraerTextoObjetivo(prompt, "clic en el");
 	            System.out.println("[SeleniumService] Acción: CLIC | Objetivo: " + objetivo);
 
-	            // Buscar botones y enlaces
 	            WebElement elemento = buscarElementoPorTexto(objetivo, accion);
 	            if (elemento != null) {
 	                System.out.println("[SeleniumService] Elemento encontrado: " + elemento.toString());
@@ -94,11 +100,11 @@ public class SeleniumService {
 	            objetivo = extraerTextoObjetivo(prompt, "escribe en el");
 	            System.out.println("[SeleniumService] Acción: ESCRIBIR | Objetivo: " + objetivo);
 
-	            // Buscar inputs y textareas
 	            WebElement elemento = buscarElementoPorTexto(objetivo, accion);
 	            if (elemento != null) {
 	                String textoAEscribir = extraerTextoAEscribir(prompt);
 	                System.out.println("[SeleniumService] Texto a escribir: " + textoAEscribir);
+	                elemento.clear(); // Limpia el campo antes de escribir
 	                elemento.sendKeys(textoAEscribir);
 	                System.out.println("[SeleniumService] Acción ESCRIBIR ejecutada.");
 	            } else {
@@ -116,56 +122,50 @@ public class SeleniumService {
 	    } catch (Exception e) {
 	        System.out.println("[SeleniumService] Error durante la prueba: " + e.getMessage());
 	        return "Error durante la prueba: " + e.getMessage();
-	    }finally {
-//	    	 webDriver.quit();
-		}
-	    // No cierres el driver aquí si es singleton
+	    }
 	}
 
-
-	private WebElement buscarElementoPorTexto(String objetivo, String accion) {
-	    System.out.println("[SeleniumService] buscarElementoPorTexto() acción: " + accion + " | Objetivo: " + objetivo);
+	// Mejora: ahora busca el objetivo tras "en el campo ..." o variantes
+	private String extraerTextoObjetivo(String prompt, String tipo) {
+	    System.out.println("[SeleniumService] extraerTextoObjetivo() prompt: " + prompt + " | Tipo: " + tipo);
 	    try {
-			List<WebElement> elementos;
+	        // Busca frases como "en el campo Email de usuario"
+	        Pattern patternCampo = Pattern.compile("en el campo ([\\wáéíóúüñÁÉÍÓÚÜÑ ]+)", Pattern.CASE_INSENSITIVE);
+	        Matcher matcherCampo = patternCampo.matcher(prompt);
+	        if (matcherCampo.find()) {
+	            String objetivo = matcherCampo.group(1).trim();
+	            System.out.println("[SeleniumService] Objetivo encontrado por 'en el campo': " + objetivo);
+	            return objetivo;
+	        }
+	        // Mantén aquí el resto de patrones si quieres compatibilidad
+	        Pattern patternComillasDobles = Pattern.compile(tipo + ".*?\"([^\"]+)\"", Pattern.CASE_INSENSITIVE);
+	        Matcher matcherDobles = patternComillasDobles.matcher(prompt);
+	        if (matcherDobles.find()) {
+	            System.out.println("[SeleniumService] Objetivo encontrado entre comillas dobles: " + matcherDobles.group(1));
+	            return matcherDobles.group(1);
+	        }
 
-			if ("clic".equals(accion)) {
-			    // Botones y enlaces
-			    elementos = webDriver.findElements(By.xpath("//button | //a | //input[@type='button' or @type='submit']"));
-			} else if ("escribe".equals(accion)) {
-			    // Inputs y textareas
-			    elementos = webDriver.findElements(By.xpath("//input[not(@type='button') and not(@type='submit') and not(@type='reset')] | //textarea"));
-			} else {
-			    elementos = new ArrayList<>();
-			}
+	        Pattern patternComillasSimples = Pattern.compile(tipo + ".*?'([^']+)'", Pattern.CASE_INSENSITIVE);
+	        Matcher matcherSimples = patternComillasSimples.matcher(prompt);
+	        if (matcherSimples.find()) {
+	            System.out.println("[SeleniumService] Objetivo encontrado entre comillas simples: " + matcherSimples.group(1));
+	            return matcherSimples.group(1);
+	        }
 
-			for (WebElement el : elementos) {
-				if (!el.isDisplayed()) continue;
-			        String texto = (el.getText() + " " +
-			                        el.getDomAttribute("value") + " " +
-			                        el.getDomAttribute("aria-label") + " " +
-			                        el.getDomAttribute("placeholder") + " " +
-			                        el.getDomAttribute("name") + " " +
-			                        el.getDomAttribute("id") + " " +
-			                        el.getDomAttribute("type")).toLowerCase();
-
-			    System.out.println("[SeleniumService] Analizando elemento: " + texto);
-
-			    if (texto.contains(objetivo.toLowerCase())) {
-			        System.out.println("[SeleniumService] Coincidencia encontrada: " + texto);
-			        return el;
-			    }
-			}
-			
-		} catch (Exception e) {
-			System.out.println("Error en " + e.getMessage());
-		}finally {
-//			webDriver.quit();
-		}
-	    System.out.println("[SeleniumService] No se encontró ningún elemento que coincida con el objetivo.");
-		return null;
+	        Pattern patternSinComillas = Pattern.compile(tipo + " (?:el|la|los|las)?\\s*([\\wáéíóúüñ ]+)", Pattern.CASE_INSENSITIVE);
+	        Matcher matcherSinComillas = patternSinComillas.matcher(prompt);
+	        if (matcherSinComillas.find()) {
+	            System.out.println("[SeleniumService] Objetivo encontrado sin comillas: " + matcherSinComillas.group(1));
+	            return matcherSinComillas.group(1);
+	        }
+	        System.out.println("[SeleniumService] No se encontró objetivo en el prompt.");
+	        return "";
+	    } catch (Exception e) {
+	        System.out.println("Error en " + e.getMessage());
+	    }
+	    return null;
 	}
 
-	
 	private String extraerTextoAEscribir(String prompt) {
 	    System.out.println("[SeleniumService] extraerTextoAEscribir() prompt: " + prompt);
 	    try {
@@ -200,79 +200,87 @@ public class SeleniumService {
 			return "";
 		} catch (Exception e) {
 			System.out.println("Error en " + e.getMessage());
-		}finally {
-//			webDriver.quit();
 		}
 		return null;
 	}
 
-	private String extraerTextoObjetivo(String prompt, String tipo) {
-	    System.out.println("[SeleniumService] extraerTextoObjetivo() prompt: " + prompt + " | Tipo: " + tipo);
+	// Mejora: Coincidencia exacta y contiene para mayor robustez
+	private WebElement buscarElementoPorTexto(String objetivo, String accion) {
+	    System.out.println("[SeleniumService] buscarElementoPorTexto() acción: " + accion + " | Objetivo: " + objetivo);
 	    try {
-			Pattern patternComillasDobles = Pattern.compile(tipo + ".*?\"([^\"]+)\"", Pattern.CASE_INSENSITIVE);
-			Matcher matcherDobles = patternComillasDobles.matcher(prompt);
-			if (matcherDobles.find()) {
-			    System.out.println("[SeleniumService] Objetivo encontrado entre comillas dobles: " + matcherDobles.group(1));
-			    return matcherDobles.group(1);
+			List<WebElement> elementos;
+
+			if ("clic".equals(accion)) {
+			    elementos = webDriver.findElements(By.xpath("//button | //a | //input[@type='button' or @type='submit']"));
+			} else if ("escribe".equals(accion)) {
+			    elementos = webDriver.findElements(By.xpath("//input[not(@type='button') and not(@type='submit') and not(@type='reset')] | //textarea"));
+			} else {
+			    elementos = new ArrayList<>();
 			}
 
-			Pattern patternComillasSimples = Pattern.compile(tipo + ".*?'([^']+)'", Pattern.CASE_INSENSITIVE);
-			Matcher matcherSimples = patternComillasSimples.matcher(prompt);
-			if (matcherSimples.find()) {
-			    System.out.println("[SeleniumService] Objetivo encontrado entre comillas simples: " + matcherSimples.group(1));
-			    return matcherSimples.group(1);
-			}
+			// Coincidencia exacta primero
+			for (WebElement el : elementos) {
+				if (!el.isDisplayed()) continue;
+				String texto = (el.getAttribute("placeholder") + " " +
+				                el.getAttribute("aria-label") + " " +
+				                el.getAttribute("name") + " " +
+				                el.getAttribute("id") + " " +
+				                el.getText()).toLowerCase();
 
-			Pattern patternSinComillas = Pattern.compile(tipo + " (?:el|la|los|las)?\\s*([\\wáéíóúüñ]+)", Pattern.CASE_INSENSITIVE);
-			Matcher matcherSinComillas = patternSinComillas.matcher(prompt);
-			if (matcherSinComillas.find()) {
-			    System.out.println("[SeleniumService] Objetivo encontrado sin comillas: " + matcherSinComillas.group(1));
-			    return matcherSinComillas.group(1);
+				if (texto.trim().equals(objetivo.toLowerCase().trim())) {
+				    System.out.println("[SeleniumService] Coincidencia EXACTA encontrada: " + texto);
+				    return el;
+				}
 			}
-			
-			Pattern patternSinComillasClick = Pattern.compile("clic(?: en (?:el|la|los|las)?)?\\s*([\\wáéíóúüñ ]+)", Pattern.CASE_INSENSITIVE);
-			Matcher matcherSinComillasClick = patternSinComillasClick.matcher(prompt);
-			if (matcherSinComillasClick.find()) {
-			    return matcherSinComillasClick.group(1).trim();
-			}
+			// Si no hay coincidencia exacta, buscar por contiene
+			for (WebElement el : elementos) {
+				if (!el.isDisplayed()) continue;
+				String texto = (el.getAttribute("placeholder") + " " +
+				                el.getAttribute("aria-label") + " " +
+				                el.getAttribute("name") + " " +
+				                el.getAttribute("id") + " " +
+				                el.getText()).toLowerCase();
 
-			System.out.println("[SeleniumService] No se encontró objetivo en el prompt.");
-			return "";
+				if (texto.contains(objetivo.toLowerCase().trim())) {
+				    System.out.println("[SeleniumService] Coincidencia encontrada: " + texto);
+				    return el;
+				}
+			}
 		} catch (Exception e) {
-			 System.out.println("Error en " + e.getMessage());
-		}finally {
-//			 webDriver.quit();
+			System.out.println("Error en " + e.getMessage());
 		}
+	    System.out.println("[SeleniumService] No se encontró ningún elemento que coincida con el objetivo.");
 		return null;
 	}
 	
-	public List<Map<String, String>> extraerElementosInteractuables(String url) {
-		System.out.println("[SeleniumService] Entrando en extraerElementosInteractuables() url: " + url );
+	public Map<String, Object> extraerElementosInteractuables(String url) {
+	    Map<String, Object> resultado = new HashMap<>();
 	    try {
-			List<Map<String, String>> elementos = new ArrayList<>();
-			webDriver.get(url);
+	        String urlActual = webDriver.getCurrentUrl();
+	        if (urlActual == null || !urlActual.equals(url)) {
+	            webDriver.get(url);
+	        }
+	        String urlFinal = webDriver.getCurrentUrl();
 
-			// Botones y enlaces
-			List<WebElement> botones = webDriver.findElements(By.xpath("//button|//a|//input|//select|//textarea"));
-			for (WebElement el : botones) {
-				if (!el.isDisplayed()) continue;
-			        Map<String, String> info = new HashMap<>();
-			        info.put("tag", el.getTagName());
-			        info.put("type", el.getDomAttribute("type"));
-			        info.put("id", el.getDomAttribute("id"));
-			        info.put("name", el.getDomAttribute("name"));
-			        info.put("text", el.getText());
-			        info.put("placeholder", el.getDomAttribute("placeholder"));
-			        elementos.add(info);
-			}
-			
-			return elementos;
-		} catch (Exception e) {
-			System.out.println("Error en " + e.getMessage());
-		}finally {
-//			 webDriver.quit();
-		}
-		return null;
+	        List<Map<String, String>> elementos = new ArrayList<>();
+	        List<WebElement> botones = webDriver.findElements(By.xpath("//button|//a|//input|//select|//textarea"));
+	        for (WebElement el : botones) {
+	            if (!el.isDisplayed()) continue;
+	            Map<String, String> info = new HashMap<>();
+	            info.put("tag", el.getTagName());
+	            info.put("type", el.getDomAttribute("type"));
+	            info.put("id", el.getDomAttribute("id"));
+	            info.put("name", el.getDomAttribute("name"));
+	            info.put("text", el.getText());
+	            info.put("placeholder", el.getAttribute("placeholder"));
+	            elementos.add(info);
+	        }
+	        resultado.put("urlFinal", urlFinal);
+	        resultado.put("elementos", elementos);
+	        return resultado;
+	    } catch (Exception e) {
+	        System.out.println("Error en " + e.getMessage());
+	    }
+	    return null;
 	}
-
 }

@@ -363,14 +363,19 @@ function detectarElementosAjax(webUrl) {
     })
     .then(response => response.json())
     .then(data => {
-        elementosCache = data;
-        pintarElementos(data);
+        // Actualiza el campo webUrl si la URL ha cambiado
+        if (data.urlFinal && data.urlFinal !== webUrl) {
+            document.getElementById('webUrl').value = data.urlFinal;
+        }
+        elementosCache = data.elementos || [];
+        pintarElementos(elementosCache);
     })
     .catch(err => {
         container.innerHTML =
             `<div class="col"><div class="alert alert-danger shadow-sm">Error al detectar elementos: ${err}</div></div>`;
     });
 }
+
 
 // Drag & Drop para tarjetas
 function dragElement(event, tag, text, placeholder, name, id) {
